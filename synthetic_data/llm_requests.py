@@ -1,5 +1,6 @@
 import sys
 import os
+from pathlib import Path
 
 from openai import OpenAI
 
@@ -8,8 +9,21 @@ import asyncio
 from tqdm.autonotebook import tqdm, trange
 import numpy as np
 
+# Load environment variables from .env file
+def load_env():
+    env_path = Path(__file__).parent.parent / '.env'
+    if env_path.exists():
+        with open(env_path) as f:
+            for line in f:
+                if line.strip() and not line.startswith('#'):
+                    key, value = line.strip().split('=', 1)
+                    os.environ[key] = value
+
+load_env()
+
 #TODO: Hard code this or set the path in the environment variable
-build_project_path = os.environ['BUILD_PROJECT_PATH']
+# build_project_path = os.environ['BUILD_PROJECT_PATH']
+build_project_path = '/Users/amruthaj/Documents/GitHub/fine-tuning-build-project'
 synthetic_data_path = os.path.join(build_project_path, 'synthetic_data')
 
 if synthetic_data_path not in sys.path:
