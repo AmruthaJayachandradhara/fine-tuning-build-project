@@ -91,25 +91,29 @@ if "app_state" not in st.session_state:
     st.session_state.app_state = "search"
 
 # ----- Functions for loading resources -----
+# Get the directory where the script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(script_dir, 'data')
+
 @st.cache_resource
 def load_fine_tuned_embeddings():
-    embeddings = np.load(os.path.join('data', 'fine_tuned_embeddings.npy'))
+    embeddings = np.load(os.path.join(data_dir, 'fine_tuned_embeddings.npy'))
     return embeddings
 
 @st.cache_resource
 def load_default_embeddings():
-    embeddings = np.load(os.path.join('data', 'default_embeddings.npy'))
+    embeddings = np.load(os.path.join(data_dir, 'default_embeddings.npy'))
     return embeddings
 
 @st.cache_resource
 def load_job_postings():
-    job_postings_df = pd.read_parquet(os.path.join('data', 'job_postings.parquet'))
+    job_postings_df = pd.read_parquet(os.path.join(data_dir, 'job_postings.parquet'))
     job_postings_df['posting'] = job_postings_df['job_posting_title'] + ' @ ' + job_postings_df['company']
     return job_postings_df['posting'].to_list()
 
 @st.cache_resource
 def load_fine_tuned_model():
-    fine_tuned_model_path = os.path.join('data', 'fine_tuned_model')
+    fine_tuned_model_path = os.path.join(data_dir, 'fine_tuned_model')
     model = SentenceTransformer(fine_tuned_model_path, device=device)
     return model
 
