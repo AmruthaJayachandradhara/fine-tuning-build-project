@@ -41,10 +41,7 @@ st.markdown(
 
 # Helper: detect device.
 def get_device():
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    elif torch.backends.mps.is_available():
-        return torch.device("mps")
+    # Force CPU for deployment stability
     return torch.device("cpu")
 
 st.title('🔍 Job Posting Search Engine')
@@ -218,12 +215,35 @@ def load_default_model():
     return model
 
 # ----- Load Resources -----
-# For demonstration, limit to the first 5000 job postings.
-fine_tuned_embeddings = torch.tensor(load_fine_tuned_embeddings()[:5000], device=device)
-default_embeddings = torch.tensor(load_default_embeddings()[:5000], device=device)
-job_postings = load_job_postings()[:5000]
-fine_tuned_model = load_fine_tuned_model()
-default_model = load_default_model()
+# For demonstration, limit to the first 1000 job postings for deployment stability.
+try:
+    fine_tuned_embeddings = torch.tensor(load_fine_tuned_embeddings()[:1000], device=device)
+    default_embeddings = torch.tensor(load_default_embeddings()[:1000], device=device)
+    job_postings = load_job_postings()[:1000]
+    fine_tuned_model = load_fine_tuned_model()
+    default_model = load_default_model()
+    st.success("✅ Successfully loaded all resources!")
+except Exception as e:
+    st.error(f"❌ Error loading resources: {str(e)}")
+    st.info("🔄 Falling back to minimal sample data...")
+    
+    # Fallback to minimal data
+    sample_jobs = [
+        "Software Engineer @ Google",
+        "Data Scientist @ Apple", 
+        "Product Manager @ Microsoft",
+        "ML Engineer @ Amazon",
+        "Frontend Developer @ Meta"
+    ] * 200
+    
+    job_postings = sample_jobs
+    default_model = load_default_model()
+    fine_tuned_model = default_model  # Use same model as fallback
+    
+    # Generate minimal embeddings
+    embeddings_array = default_model.encode(job_postings, normalize_embeddings=True)
+    fine_tuned_embeddings = torch.tensor(embeddings_array, device=device)
+    default_embeddings = torch.tensor(embeddings_array, device=device)
 
 # ----- New Feature Functions -----
 def create_embedding_visualization():
