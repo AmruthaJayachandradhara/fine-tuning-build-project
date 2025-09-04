@@ -33,3 +33,26 @@ def parse_gpt_response(gpt_output, num_query_titles, num_examples_per_query_titl
             raise Exception('Failed to parse response')
         else:
             return None
+
+if __name__ == '__main__':
+    # Example usage:
+    test_output_string = """<response>
+1. [`Senior Software Engineer`, `Lead Application Developer`]
+2. [`Data Scientist (Machine Learning)`, `ML Research Scientist`]
+</response>"""
+    
+    print("--- Testing gpt_parsing.py ---")
+    print(f"Input string:\n{test_output_string}\n")
+    
+    parsed = parse_gpt_response(
+        gpt_output=test_output_string,
+        num_query_titles=2,
+        num_examples_per_query_title=2
+    )
+    
+    if parsed:
+        print("Parsing successful!")
+        for i, result_list in enumerate(parsed):
+            print(f"Result {i+1}: {result_list}")
+    else:
+        print("Parsing failed.")
