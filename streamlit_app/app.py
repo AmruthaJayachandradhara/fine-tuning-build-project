@@ -95,26 +95,72 @@ if "app_state" not in st.session_state:
 script_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(script_dir, 'data')
 
+# Create data directory if it doesn't exist
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir, exist_ok=True)
+    st.info("📁 Created data directory for first-time setup")
+
 @st.cache_resource
 def load_fine_tuned_embeddings():
-    embeddings = np.load(os.path.join(data_dir, 'fine_tuned_embeddings.npy'))
+    # Try to load pre-computed embeddings, otherwise generate them
+    embeddings_path = os.path.join(data_dir, 'fine_tuned_embeddings.npy')
+    if os.path.exists(embeddings_path):
+        embeddings = np.load(embeddings_path)
+    else:
+        # Generate embeddings on first run
+        st.info("🔄 Generating fine-tuned embeddings on first run...")
+        job_postings_list = load_job_postings()
+        model = load_fine_tuned_model()
+        embeddings = model.encode(job_postings_list, normalize_embeddings=True, show_progress_bar=True)
     return embeddings
 
 @st.cache_resource
 def load_default_embeddings():
-    embeddings = np.load(os.path.join(data_dir, 'default_embeddings.npy'))
+    # Try to load pre-computed embeddings, otherwise generate them
+    embeddings_path = os.path.join(data_dir, 'default_embeddings.npy')
+    if os.path.exists(embeddings_path):
+        embeddings = np.load(embeddings_path)
+    else:
+        # Generate embeddings on first run
+        st.info("🔄 Generating default embeddings on first run...")
+        job_postings_list = load_job_postings()
+        model = load_default_model()
+        embeddings = model.encode(job_postings_list, normalize_embeddings=True, show_progress_bar=True)
     return embeddings
 
 @st.cache_resource
 def load_job_postings():
-    job_postings_df = pd.read_parquet(os.path.join(data_dir, 'job_postings.parquet'))
-    job_postings_df['posting'] = job_postings_df['job_posting_title'] + ' @ ' + job_postings_df['company']
-    return job_postings_df['posting'].to_list()
+    job_postings_path = os.path.join(data_dir, 'job_postings.parquet')
+    if os.path.exists(job_postings_path):
+        job_postings_df = pd.read_parquet(job_postings_path)
+        job_postings_df['posting'] = job_postings_df['job_posting_title'] + ' @ ' + job_postings_df['company']
+        return job_postings_df['posting'].to_list()
+    else:
+        # Create sample data if file doesn't exist
+        st.warning("⚠️ Job postings data not found, using sample data")
+        sample_jobs = [
+            "Software Engineer @ Google",
+            "Data Scientist @ Apple", 
+            "Product Manager @ Microsoft",
+            "ML Engineer @ Amazon",
+            "Frontend Developer @ Meta",
+            "Backend Developer @ Netflix",
+            "DevOps Engineer @ Tesla",
+            "AI Researcher @ OpenAI",
+            "UX Designer @ Adobe",
+            "Marketing Analyst @ Spotify"
+        ] * 500  # Create 5000 sample jobs
+        return sample_jobs[:5000]
 
 @st.cache_resource
 def load_fine_tuned_model():
     fine_tuned_model_path = os.path.join(data_dir, 'fine_tuned_model')
-    model = SentenceTransformer(fine_tuned_model_path, device=device)
+    if os.path.exists(fine_tuned_model_path):
+        model = SentenceTransformer(fine_tuned_model_path, device=device)
+    else:
+        # Fallback to default model if fine-tuned model is not available
+        st.warning("⚠️ Fine-tuned model not found, using default model as fallback")
+        model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', device=device)
     return model
 
 @st.cache_resource
