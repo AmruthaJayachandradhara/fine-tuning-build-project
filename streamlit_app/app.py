@@ -107,10 +107,38 @@ def load_fine_tuned_embeddings():
     if os.path.exists(embeddings_path):
         embeddings = np.load(embeddings_path)
     else:
+        # Generate embeddings on first run - get job postings directly to avoid circular dependency
+        job_postings_path = os.path.join(data_dir, 'job_postings.parquet')
+        if os.path.exists(job_postings_path):
+            job_postings_df = pd.read_parquet(job_postings_path)
+            job_postings_df['posting'] = job_postings_df['job_posting_title'] + ' @ ' + job_postings_df['company']
+            job_postings_list = job_postings_df['posting'].to_list()
+        else:
+            # Use sample data if file doesn't exist
+            sample_jobs = [
+                "Software Engineer @ Google",
+                "Data Scientist @ Apple", 
+                "Product Manager @ Microsoft",
+                "ML Engineer @ Amazon",
+                "Frontend Developer @ Meta",
+                "Backend Developer @ Netflix",
+                "DevOps Engineer @ Tesla",
+                "AI Researcher @ OpenAI",
+                "UX Designer @ Adobe",
+                "Marketing Analyst @ Spotify"
+            ] * 500
+            job_postings_list = sample_jobs[:5000]
+        
         # Generate embeddings on first run
         st.info("🔄 Generating fine-tuned embeddings on first run...")
-        job_postings_list = load_job_postings()
-        model = load_fine_tuned_model()
+        fine_tuned_model_path = os.path.join(data_dir, 'fine_tuned_model')
+        if os.path.exists(fine_tuned_model_path):
+            model = SentenceTransformer(fine_tuned_model_path, device=device)
+        else:
+            # Fallback to default model
+            st.warning("⚠️ Fine-tuned model not found, using default model for embeddings")
+            model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', device=device)
+        
         embeddings = model.encode(job_postings_list, normalize_embeddings=True, show_progress_bar=True)
     return embeddings
 
@@ -121,10 +149,31 @@ def load_default_embeddings():
     if os.path.exists(embeddings_path):
         embeddings = np.load(embeddings_path)
     else:
+        # Generate embeddings on first run - get job postings directly to avoid circular dependency
+        job_postings_path = os.path.join(data_dir, 'job_postings.parquet')
+        if os.path.exists(job_postings_path):
+            job_postings_df = pd.read_parquet(job_postings_path)
+            job_postings_df['posting'] = job_postings_df['job_posting_title'] + ' @ ' + job_postings_df['company']
+            job_postings_list = job_postings_df['posting'].to_list()
+        else:
+            # Use sample data if file doesn't exist
+            sample_jobs = [
+                "Software Engineer @ Google",
+                "Data Scientist @ Apple", 
+                "Product Manager @ Microsoft",
+                "ML Engineer @ Amazon",
+                "Frontend Developer @ Meta",
+                "Backend Developer @ Netflix",
+                "DevOps Engineer @ Tesla",
+                "AI Researcher @ OpenAI",
+                "UX Designer @ Adobe",
+                "Marketing Analyst @ Spotify"
+            ] * 500
+            job_postings_list = sample_jobs[:5000]
+        
         # Generate embeddings on first run
         st.info("🔄 Generating default embeddings on first run...")
-        job_postings_list = load_job_postings()
-        model = load_default_model()
+        model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', device=device)
         embeddings = model.encode(job_postings_list, normalize_embeddings=True, show_progress_bar=True)
     return embeddings
 
